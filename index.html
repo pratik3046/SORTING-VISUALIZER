@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sorting Algorithm Visualizer</title>
+    <!-- 1. Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 2. Load Inter font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* 3. Set Inter as the default font */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* 4. Style for buttons when disabled */
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        /* 5. Custom styles for the range slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            background: #4a5568; /* gray-700 */
+            border-radius: 5px;
+            outline: none;
+            opacity: 0.9;
+            -webkit-transition: .2s;
+            transition: opacity .2s;
+        }
+        input[type=range]:hover {
+            opacity: 1;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #6366f1; /* indigo-500 */
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        input[type=range]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #6366f1; /* indigo-500 */
+            border-radius: 50%;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col items-center p-4">
+
+    <!-- Header -->
+    <h1 class="text-3xl md:text-4xl font-bold text-center text-indigo-400 mt-4 mb-6">
+        Sorting Algorithm Visualizer
+    </h1>
+
+    <!-- Controls -->
+    <div id="controls-container" class="w-full max-w-6xl bg-gray-800 p-4 rounded-lg shadow-xl mb-6 flex flex-col gap-4">
+        
+        <!-- Top Row: Array Generation & Slider -->
+        <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+            <!-- Left Side: Generation -->
+            <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                <button id="generate-btn" class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition duration-200 w-full sm:w-auto">
+                    Generate New Array
+                </button>
+                <div id="custom-input-container" class="flex items-center gap-2 w-full sm:w-auto">
+                    <input id="custom-array-input" type="text" placeholder="e.g., 5,3,8,1" class="bg-gray-700 text-white p-2 rounded-lg flex-1 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <button id="plot-btn" class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-3 rounded-lg shadow transition duration-200">
+                        Plot
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Side: Slider -->
+            <div class="flex flex-col items-center w-full md:w-auto md:min-w-[250px]">
+                <label for="size-slider" class="block text-sm font-medium text-gray-300 mb-1">
+                    Size & Speed
+                </label>
+                <input id="size-slider" type="range" min="2" max="200" value="50" class="w-full">
+                <span id="size-label" class="text-xs text-gray-400 mt-1">Size: 50</span>
+            </div>
+        </div>
+
+        <!-- Divider -->
+        <hr class="border-gray-700">
+
+        <!-- Bottom Row: Sort Buttons -->
+        <div class="flex flex-wrap gap-2 justify-center">
+            <button id="bubble-sort-btn" class="sort-btn bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg shadow transition duration-200">
+                Bubble Sort
+            </button>
+            <button id="selection-sort-btn" class="sort-btn bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg shadow transition duration-200">
+                Selection Sort
+            </button>
+            <button id="insertion-sort-btn" class="sort-btn bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg shadow transition duration-200">
+                Insertion Sort
+            </button>
+            <button id="quick-sort-btn" class="sort-btn bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg shadow transition duration-200">
+                Quick Sort
+            </button>
+            <button id="merge-sort-btn" class="sort-btn bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg shadow transition duration-200">
+                Merge Sort
+            </button>
+            
+            <!-- Stop Button (hidden by default) -->
+            <button id="stop-btn" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg shadow transition duration-200" style="display: none;">
+                Stop Sorting
+            </button>
+        </div>
+    </div>
+
+    <!-- Canvas Container -->
+    <div class="w-full max-w-6xl h-[40vh] sm:h-[50vh] md:h-[60vh] bg-gray-800 rounded-lg shadow-xl overflow-hidden">
+        <canvas id="visualizer-canvas" class="w-full h-full"></canvas>
+    </div>
+
+    <!-- Success Modal (Hidden by default) -->
+    <div id="success-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" style="display: none; z-index: 100;">
+        <div class="bg-gray-700 text-white p-6 rounded-lg shadow-2xl w-full max-w-sm text-center">
+            <h2 class="text-2xl font-bold text-emerald-400 mb-4">Success!</h2>
+            <p id="success-message" class="text-lg mb-6">Sorting complete.</p>
+            <button id="modal-close-btn" class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-6 rounded-lg shadow transition duration-200">
+                OK
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // === DOM Elements ===
+        const canvas = document.getElementById('visualizer-canvas');
+        const ctx = canvas.getContext('2d');
+        const generateBtn = document.getElementById('generate-btn');
+        const bubbleSortBtn = document.getElementById('bubble-sort-btn');
+        const selectionSortBtn = document.getElementById('selection-sort-btn'); // New
+        const insertionSortBtn = document.getElementById('insertion-sort-btn'); // New
+        const quickSortBtn = document.getElementById('quick-sort-btn');
+        const mergeSortBtn = document.getElementById('merge-sort-btn');
+        const stopBtn = document.getElementById('stop-btn'); // New
+        const sizeSlider = document.getElementById('size-slider');
+        const sizeLabel = document.getElementById('size-label');
+        const sortBtns = document.querySelectorAll('.sort-btn');
+        const controlsContainer = document.getElementById('controls-container');
+        const customInputContainer = document.getElementById('custom-input-container'); // New
+        const customArrayInput = document.getElementById('custom-array-input'); // New
+        const plotBtn = document.getElementById('plot-btn'); // New
+
+        // New Modal Elements
+        const successModal = document.getElementById('success-modal');
+        const successMessage = document.getElementById('success-message');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+
+        // === State ===
+        let array = [];
+        let isSorting = false;
+        let isStopping = false; // New
+        let arraySize = 50;
+        let delay = 100; // This will be derived from the slider
+
+        // === Colors ===
+        const COLOR_PRIMARY = '#f8fafc'; // gray-50
+        const COLOR_COMPARE = '#f43f5e'; // rose-500
+        const COLOR_SWAP = '#34d399';    // emerald-400
+        const COLOR_PIVOT = '#eab308';   // yellow-500
+        const COLOR_SORTED = '#6366f1';  // indigo-500
+
+        // === Initialization ===
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set initial canvas size
+            resizeCanvas();
+            // Add resize listener
+            window.addEventListener('resize', () => {
+                if (!isSorting) {
+                    resizeCanvas();
+                    drawArray();
+                }
+            });
+            // Add control listeners
+            generateBtn.addEventListener('click', () => {
+                if (isSorting) return;
+                handleSliderChange(); // Update size/delay from slider
+                generateNewArray(); // Generate new array
+            });
+            sizeSlider.addEventListener('input', () => {
+                if (isSorting) return;
+                handleSliderChange();
+                // We will NOT regenerate the array on slider change anymore.
+                // The user must click "Generate New Array"
+                // This prevents wiping a custom array just by touching the slider.
+                // generateNewArray(); // Regenerate array on slider change
+            });
+            plotBtn.addEventListener('click', handlePlot); // New
+            stopBtn.addEventListener('click', () => { // New
+                isStopping = true;
+                stopBtn.disabled = true;
+                stopBtn.textContent = "Stopping...";
+            });
+
+            bubbleSortBtn.addEventListener('click', () => startSort(bubbleSort, "Bubble Sort"));
+            selectionSortBtn.addEventListener('click', () => startSort(selectionSort, "Selection Sort")); // Updated
+            insertionSortBtn.addEventListener('click', () => startSort(insertionSort, "Insertion Sort")); // Updated
+            quickSortBtn.addEventListener('click', () => startSort(quickSortWrapper, "Quick Sort"));
+            mergeSortBtn.addEventListener('click', () => startSort(mergeSortWrapper, "Merge Sort"));
+            
+            // New Modal Listener
+            modalCloseBtn.addEventListener('click', () => {
+                successModal.style.display = 'none';
+            });
+
+            // Initial array generation
+            handleSliderChange(); // To set initial size and delay
+            generateNewArray();
+        });
+
+        // === Canvas & Array Functions ===
+
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+
+        function handleSliderChange() {
+            arraySize = parseInt(sizeSlider.value);
+            // Invert the slider value for delay: smaller size = slower, larger size = faster
+            // Max value (200) -> min delay (e.g., 1ms)
+            // Min value (10) -> max delay (e.g., 200ms)
+            let maxDelay = 200;
+            let minDelay = 1;
+            let speed = (sizeSlider.max - arraySize) / (sizeSlider.max - sizeSlider.min);
+            delay = minDelay + (maxDelay - minDelay) * speed;
+            
+            sizeLabel.textContent = `Size: ${arraySize}`;
+            // Removed generateNewArray() call from here
+        }
+
+        function generateNewArray() {
+            if (isSorting) return;
+            customArrayInput.value = ""; // Clear custom input
+            
+            // Ensure arraySize is synced with slider before generating
+            arraySize = parseInt(sizeSlider.value);
+            sizeLabel.textContent = `Size: ${arraySize}`; // Reset label
+            
+            array = [];
+            for (let i = 0; i < arraySize; i++) {
+                // Store values as objects for better state tracking (e.g., color)
+                array.push({
+                    value: Math.floor(Math.random() * (canvas.height - 20)) + 10,
+                    color: COLOR_PRIMARY
+                });
+            }
+            drawArray();
+        }
+
+        function drawArray() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const barWidth = canvas.width / arraySize;
+            const barSpacing = barWidth > 3 ? 1 : 0; // Add spacing if bars are wide
+            
+            for (let i = 0; i < array.length; i++) {
+                const bar = array[i];
+                ctx.fillStyle = bar.color;
+                ctx.fillRect(
+                    i * barWidth,                // x
+                    canvas.height - bar.value, // y
+                    barWidth - barSpacing,       // width
+                    bar.value                    // height
+                );
+            }
+        }
+
+        // New function to handle plotting user input
+        function handlePlot() {
+            if (isSorting) return;
+            const inputString = customArrayInput.value;
+            if (!inputString) return;
+
+            const newValues = inputString.split(/[\s,]+/) // Split by comma or space
+                .map(s => parseFloat(s.trim()))
+                .filter(n => !isNaN(n) && n > 0); // Filter out invalid numbers and non-positives
+
+            if (newValues.length < 2) {
+                console.warn("Please enter at least 2 valid, positive numbers.");
+                customArrayInput.value = "Enter at least 2 valid numbers.";
+                return;
+            }
+
+            const maxVal = Math.max(...newValues);
+            const canvasHeight = canvas.height - 20;
+
+            array = newValues.map(num => ({
+                value: (num / maxVal) * canvasHeight + 10, // Scale to fit canvas
+                color: COLOR_PRIMARY
+            }));
+
+            arraySize = array.length;
+            
+            // Manually update slider and related values
+            // sizeSlider.value = Math.min(Math.max(arraySize, sizeSlider.min), sizeSlider.max); // <-- REMOVED THIS LINE
+            let maxDelay = 200;
+            let minDelay = 1;
+            // Calculate delay based on custom array size
+            let sliderMax = 200; // Use a virtual max for calculation
+            let sliderMin = 2;
+            let speed = (sliderMax - arraySize) / (sliderMax - sliderMin);
+            delay = minDelay + (maxDelay - minDelay) * speed;
+            
+            if (arraySize > 200) delay = 1; // Cap delay
+            if (arraySize < 10) delay = 200;
+            
+            sizeLabel.textContent = `Size: ${arraySize} (Custom)`; // <-- UPDATED LABEL
+            
+            drawArray();
+        }
+
+        // === Sorting Utilities ===
+
+        // New function to show the message
+        function showSortSuccessMessage(algorithmName) {
+            successMessage.textContent = `Sorted successfully using ${algorithmName}!`;
+            successModal.style.display = 'flex';
+        }
+
+        async function startSort(sortFunction, algorithmName) { // Added algorithmName
+            if (isSorting) return;
+            isSorting = true;
+            isStopping = false; // Reset stop flag
+            toggleControls(false); // Hides sort buttons, shows stop button
+
+            try {
+                await sortFunction();
+                // If sort completes without stopping
+                if (!isStopping) { 
+                    await finishSortAnimation();
+                    // *** NEW CODE ***
+                    showSortSuccessMessage(algorithmName); // Show the success message
+                }
+            } catch (error) {
+                if (error.message !== "SortCanceled") {
+                    console.error("Sorting error:", error);
+                    // Don't show animation if a real error occurred
+                }
+                // If stopped, the 'finally' block will handle reset
+            } finally {
+                isSorting = false;
+                toggleControls(true); // Hides stop button, shows sort buttons
+                
+                // If it was stopped, reset the array to a clean state
+                if (isStopping) {
+                    isStopping = false;
+                    generateNewArray(); // Reset array
+                }
+            }
+        }
+
+        function toggleControls(enabled) {
+            generateBtn.disabled = !enabled;
+            sizeSlider.disabled = !enabled;
+            plotBtn.disabled = !enabled;
+            customArrayInput.disabled = !enabled;
+
+            sortBtns.forEach(btn => {
+                btn.disabled = !enabled;
+                btn.style.display = enabled ? 'inline-block' : 'none';
+            });
+            
+            // Handle stop button
+            stopBtn.style.display = enabled ? 'none' : 'inline-block';
+            stopBtn.disabled = false; // Re-enable stop button
+            stopBtn.textContent = "Stop Sorting"; // Reset text
+            
+            // Dim the controls container
+            controlsContainer.style.opacity = enabled ? '1' : '0.7';
+        }
+
+        async function checkStop() { // Renamed from sleep
+            if (isStopping) {
+                throw new Error("SortCanceled");
+            }
+            return new Promise(resolve => setTimeout(resolve, delay));
+        }
+
+        function swap(i, j) {
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+
+        async function finishSortAnimation() {
+            // "Wipe" animation to green
+            for (let i = 0; i < array.length; i++) {
+                if (isStopping) return; // Allow stop during finish animation
+                array[i].color = COLOR_SORTED;
+                if(i % Math.floor(array.length / 50) === 0 || array.length < 50) {
+                   await checkStop();
+                   drawArray();
+                }
+            }
+            drawArray();
+            await new Promise(r => setTimeout(r, 500)); // Wait half a second
+
+            // Reset colors
+            for (let i = 0; i < array.length; i++) {
+                array[i].color = COLOR_PRIMARY;
+            }
+            drawArray();
+        }
+
+        // === Sorting Algorithms ===
+
+        // --- 1. Bubble Sort ---
+        async function bubbleSort() {
+            let n = array.length;
+            let swapped;
+            do {
+                swapped = false;
+                for (let i = 0; i < n - 1; i++) {
+                    await checkStop(); // Check for stop
+                    array[i].color = COLOR_COMPARE;
+                    array[i + 1].color = COLOR_COMPARE;
+                    drawArray();
+                    await checkStop();
+
+                    if (array[i].value > array[i + 1].value) {
+                        array[i].color = COLOR_SWAP;
+                        array[i + 1].color = COLOR_SWAP;
+                        drawArray();
+                        await checkStop();
+                        
+                        swap(i, i + 1);
+                        swapped = true;
+
+                        drawArray();
+                        await checkStop();
+                    }
+
+                    array[i].color = COLOR_PRIMARY;
+                    array[i + 1].color = COLOR_PRIMARY;
+                }
+                // The last element is now sorted
+                array[n - 1].color = COLOR_SORTED;
+                n--; // Optimize: no need to check the already sorted part
+            } while (swapped);
+
+            // Color any remaining elements that were already sorted
+            for (let i = 0; i < n; i++) {
+                array[i].color = COLOR_SORTED;
+            }
+            drawArray();
+        }
+
+        // --- 2. Selection Sort (NEW) ---
+        async function selectionSort() {
+            let n = array.length;
+
+            for (let i = 0; i < n - 1; i++) {
+                // Find the minimum element in unsorted array
+                let min_idx = i;
+                array[min_idx].color = COLOR_PIVOT; // Use pivot color for current min
+                drawArray();
+                
+                for (let j = i + 1; j < n; j++) {
+                    array[j].color = COLOR_COMPARE;
+                    drawArray();
+                    await checkStop();
+
+                    if (array[j].value < array[min_idx].value) {
+                        array[min_idx].color = COLOR_PRIMARY; // Reset old min
+                        min_idx = j;
+                        array[min_idx].color = COLOR_PIVOT; // Set new min
+                    }
+                    drawArray();
+                    if(j !== min_idx) array[j].color = COLOR_PRIMARY; // Reset non-min
+                }
+
+                // Swap the found minimum element with the first element
+                array[i].color = COLOR_SWAP;
+                array[min_idx].color = COLOR_SWAP;
+                drawArray();
+                await checkStop();
+
+                swap(min_idx, i);
+
+                array[min_idx].color = COLOR_PRIMARY; // Reset old position of min
+                array[i].color = COLOR_SORTED; // Mark as sorted
+                drawArray();
+                await checkStop();
+            }
+            array[n - 1].color = COLOR_SORTED; // Mark last element as sorted
+            drawArray();
+        }
+
+        // --- 3. Insertion Sort (NEW) ---
+        async function insertionSort() {
+            let n = array.length;
+            array[0].color = COLOR_SORTED; // First element is trivially sorted
+
+            for (let i = 1; i < n; i++) {
+                let key = array[i].value;
+                let keyObj = array[i]; // Store the whole object
+                let j = i - 1;
+
+                keyObj.color = COLOR_PIVOT; // Highlight the key element
+                drawArray();
+                await checkStop();
+
+                /* Move elements of arr[0..i-1], that are
+                   greater than key, to one position ahead
+                   of their current position */
+                while (j >= 0 && array[j].value > key) {
+                    array[j].color = COLOR_COMPARE;
+                    drawArray();
+                    await checkStop();
+
+                    array[j + 1] = array[j]; // Shift element to the right
+                    array[j + 1].color = COLOR_SORTED; // Mark as part of sorted
+                    array[j] = keyObj; // Move key object back
+                    array[j].color = COLOR_PIVOT;
+
+                    drawArray();
+                    await checkStop();
+                    
+                    array[j + 1].color = COLOR_SORTED; // Reset shifted element
+                    j = j - 1;
+                }
+                array[j + 1] = keyObj; // Place key in correct position
+                
+                // Color the sorted part
+                for(let k = 0; k <= i; k++) {
+                    array[k].color = COLOR_SORTED;
+                }
+                drawArray();
+                await checkStop();
+            }
+        }
+
+
+        // --- 4. Quick Sort ---
+        async function quickSortWrapper() {
+            await quickSort(0, array.length - 1);
+        }
+
+        async function quickSort(low, high) {
+            if (low < high) {
+                let pi = await partition(low, high);
+                
+                // Recursively sort elements before and after partition
+                await quickSort(low, pi - 1);
+                await quickSort(pi + 1, high);
+            }
+            // Mark as sorted when a subarray is done (low >= high)
+            if (low >= 0 && low < array.length) array[low].color = COLOR_SORTED;
+            if (high >= 0 && high < array.length) array[high].color = COLOR_SORTED;
+            // No drawArray/sleep here, let partition handle it
+        }
+
+        async function partition(low, high) {
+            let pivot = array[high].value;
+            array[high].color = COLOR_PIVOT; // Mark pivot
+            let i = (low - 1); // Index of smaller element
+
+            for (let j = low; j < high; j++) {
+                // Mark partition boundary and current element
+                if (i >= low) array[i].color = COLOR_SWAP;
+                array[j].color = COLOR_COMPARE;
+                drawArray();
+                await checkStop();
+
+                if (array[j].value < pivot) {
+                    i++;
+                    
+                    // Swap
+                    if (i !== j) {
+                        array[i].color = COLOR_SWAP;
+                        array[j].color = COLOR_SWAP;
+                        drawArray();
+                        await checkStop();
+
+                        swap(i, j);
+                    }
+                }
+                
+                // Reset colors
+                if (i >= low) array[i].color = COLOR_PRIMARY;
+                array[j].color = COLOR_PRIMARY;
+            }
+
+            // Swap pivot into its correct place
+            array[high].color = COLOR_SWAP;
+            if(i + 1 < array.length) array[i + 1].color = COLOR_SWAP;
+            drawArray();
+            await checkStop();
+            
+            swap(i + 1, high);
+            
+            // Reset colors
+            if(i + 1 < array.length) array[i + 1].color = COLOR_SORTED; // Pivot is sorted
+            array[high].color = COLOR_PRIMARY; // Old pivot pos is reset
+            drawArray();
+            await checkStop();
+
+            return i + 1; // Return partition index
+        }
+
+        // --- 5. Merge Sort ---
+        async function mergeSortWrapper() {
+            // Create a copy of the array values for merging
+            let values = array.map(item => item.value);
+            await mergeSort(values, 0, array.length - 1);
+        }
+        
+        async function mergeSort(values, l, r) {
+            if (l >= r) {
+                return;
+            }
+            let m = l + Math.floor((r - l) / 2);
+            await mergeSort(values, l, m);
+            await mergeSort(values, m + 1, r);
+            await merge(values, l, m, r);
+        }
+
+        async function merge(values, l, m, r) {
+            let n1 = m - l + 1;
+            let n2 = r - m;
+
+            // Create temp arrays
+            let L = new Array(n1);
+            let R = new Array(n2);
+
+            // Copy data to temp arrays
+            for (let i = 0; i < n1; i++) {
+                L[i] = values[l + i];
+            }
+            for (let j = 0; j < n2; j++) {
+                R[j] = values[m + 1 + j];
+            }
+
+            // Merge the temp arrays back into arr[l..r]
+            let i = 0; // Initial index of first subarray
+            let j = 0; // Initial index of second subarray
+            let k = l; // Initial index of merged subarray
+
+            while (i < n1 && j < n2) {
+                // Highlight elements being compared
+                array[l + i].color = COLOR_COMPARE;
+                array[m + 1 + j].color = COLOR_COMPARE;
+                drawArray();
+                await checkStop();
+
+                if (L[i] <= R[j]) {
+                    values[k] = L[i];
+                    // Update main array for visualization
+                    array[k].value = L[i];
+                    array[k].color = COLOR_SWAP; // Show it being "placed"
+                    i++;
+                } else {
+                    values[k] = R[j];
+                    // Update main array for visualization
+                    array[k].value = R[j];
+                    array[k].color = COLOR_SWAP; // Show it being "placed"
+                    j++;
+                }
+                drawArray();
+                await checkStop();
+                array[k].color = COLOR_PRIMARY; // Reset color after placement
+                k++;
+            }
+
+            // Copy remaining elements of L[], if any
+            while (i < n1) {
+                values[k] = L[i];
+                array[k].value = L[i];
+                array[k].color = COLOR_SWAP;
+                drawArray();
+                await checkStop();
+                array[k].color = COLOR_PRIMARY;
+                i++;
+                k++;
+            }
+
+            // Copy remaining elements of R[], if any
+            while (j < n2) {
+                values[k] = R[j];
+                array[k].value = R[j];
+                array[k].color = COLOR_SWAP;
+                drawArray();
+                await checkStop();
+                array[k].color = COLOR_PRIMARY;
+                j++;
+                k++;
+            }
+            
+            // Mark this merged section as "sorted" in this pass
+            for(let c = l; c <= r; c++) {
+                array[c].color = COLOR_SORTED;
+            }
+            drawArray();
+            await checkStop();
+        }
+
+    </script>
+</body>
+</html>
