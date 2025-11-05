@@ -82,7 +82,7 @@
             <!-- Right Side: Slider -->
             <div class="flex flex-col items-center w-full md:w-auto md:min-w-[250px]">
                 <label for="size-slider" class="block text-sm font-medium text-gray-300 mb-1">
-                    Size 
+                    Size & Speed
                 </label>
                 <input id="size-slider" type="range" min="2" max="200" value="50" class="w-full">
                 <span id="size-label" class="text-xs text-gray-400 mt-1">Size: 50</span>
@@ -126,7 +126,20 @@
     <div id="success-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" style="display: none; z-index: 100;">
         <div class="bg-gray-700 text-white p-6 rounded-lg shadow-2xl w-full max-w-sm text-center">
             <h2 class="text-2xl font-bold text-emerald-400 mb-4">Success!</h2>
-            <p id="success-message" class="text-lg mb-6">Sorting complete.</p>
+            <p id="success-message" class="text-lg mb-4">Sorting complete.</p>
+            
+            <!-- NEW: Sort Stats Display -->
+            <div id="sort-stats" class="text-md text-left text-gray-300 mb-6 bg-gray-800 p-4 rounded-lg">
+                <p class="flex justify-between">
+                    <span>Swaps:</span>
+                    <span id="swap-count" class="font-bold text-emerald-400">0</span>
+                </p>
+                <p class="flex justify-between mt-2">
+                    <span id="pass-label">Passes:</span>
+                    <span id="pass-count" class="font-bold text-indigo-400">0</span>
+                </p>
+            </div>
+            
             <button id="modal-close-btn" class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-6 rounded-lg shadow transition duration-200">
                 OK
             </button>
@@ -156,6 +169,11 @@
         const successModal = document.getElementById('success-modal');
         const successMessage = document.getElementById('success-message');
         const modalCloseBtn = document.getElementById('modal-close-btn');
+
+        // NEW: Stats Elements
+        const swapCountEl = document.getElementById('swap-count');
+        const passCountEl = document.getElementById('pass-count');
+        const passLabelEl = document.getElementById('pass-label');
 
         // === State ===
         let array = [];
@@ -324,8 +342,21 @@
         // === Sorting Utilities ===
 
         // New function to show the message
-        function showSortSuccessMessage(algorithmName) {
+        function showSortSuccessMessage(algorithmName, stats) { // Updated
             successMessage.textContent = `Sorted successfully using ${algorithmName}!`;
+            
+            // NEW: Populate stats
+            swapCountEl.textContent = stats.swaps.toLocaleString(); // Add commas for large numbers
+            passCountEl.textContent = stats.passes.toLocaleString();
+
+            // NEW: Update pass label based on algorithm
+            const passLabelMap = {
+                "Quick Sort": "Partitions",
+                "Merge Sort": "Merges",
+                "default": "Passes"
+            };
+            passLabelEl.textContent = passLabelMap[algorithmName] || passLabelMap["default"];
+
             successModal.style.display = 'flex';
         }
 
@@ -336,12 +367,13 @@
             toggleControls(false); // Hides sort buttons, shows stop button
 
             try {
-                await sortFunction();
+                // MODIFIED: Capture stats from sort function
+                const stats = await sortFunction();
                 // If sort completes without stopping
                 if (!isStopping) { 
                     await finishSortAnimation();
-                    // *** NEW CODE ***
-                    showSortSuccessMessage(algorithmName); // Show the success message
+                    // *** MODIFIED ***
+                    showSortSuccessMessage(algorithmName, stats); // Show the success message with stats
                 }
             } catch (error) {
                 if (error.message !== "SortCanceled") {
@@ -416,9 +448,11 @@
 
         // --- 1. Bubble Sort ---
         async function bubbleSort() {
+            let stats = { swaps: 0, passes: 0 }; // NEW
             let n = array.length;
             let swapped;
             do {
+                stats.passes++; // NEW
                 swapped = false;
                 for (let i = 0; i < n - 1; i++) {
                     await checkStop(); // Check for stop
@@ -434,6 +468,7 @@
                         await checkStop();
                         
                         swap(i, i + 1);
+                        stats.swaps++; // NEW
                         swapped = true;
 
                         drawArray();
@@ -453,13 +488,16 @@
                 array[i].color = COLOR_SORTED;
             }
             drawArray();
+            return stats; // NEW
         }
 
         // --- 2. Selection Sort (NEW) ---
         async function selectionSort() {
+            let stats = { swaps: 0, passes: 0 }; // NEW
             let n = array.length;
 
             for (let i = 0; i < n - 1; i++) {
+                stats.passes++; // NEW
                 // Find the minimum element in unsorted array
                 let min_idx = i;
                 array[min_idx].color = COLOR_PIVOT; // Use pivot color for current min
@@ -485,7 +523,10 @@
                 drawArray();
                 await checkStop();
 
-                swap(min_idx, i);
+                if (min_idx !== i) { // NEW: Only count if it's a real swap
+                    swap(min_idx, i);
+                    stats.swaps++; // NEW
+                }
 
                 array[min_idx].color = COLOR_PRIMARY; // Reset old position of min
                 array[i].color = COLOR_SORTED; // Mark as sorted
@@ -494,14 +535,17 @@
             }
             array[n - 1].color = COLOR_SORTED; // Mark last element as sorted
             drawArray();
+            return stats; // NEW
         }
 
         // --- 3. Insertion Sort (NEW) ---
         async function insertionSort() {
+            let stats = { swaps: 0, passes: 0 }; // NEW
             let n = array.length;
             array[0].color = COLOR_SORTED; // First element is trivially sorted
 
             for (let i = 1; i < n; i++) {
+                stats.passes++; // NEW
                 let key = array[i].value;
                 let keyObj = array[i]; // Store the whole object
                 let j = i - 1;
@@ -519,6 +563,7 @@
                     await checkStop();
 
                     array[j + 1] = array[j]; // Shift element to the right
+                    stats.swaps++; // NEW: Count shifts/writes
                     array[j + 1].color = COLOR_SORTED; // Mark as part of sorted
                     array[j] = keyObj; // Move key object back
                     array[j].color = COLOR_PIVOT;
@@ -538,29 +583,33 @@
                 drawArray();
                 await checkStop();
             }
+            return stats; // NEW
         }
 
 
         // --- 4. Quick Sort ---
         async function quickSortWrapper() {
-            await quickSort(0, array.length - 1);
+            let stats = { swaps: 0, passes: 0 }; // NEW
+            await quickSort(0, array.length - 1, stats);
+            return stats; // NEW
         }
 
-        async function quickSort(low, high) {
+        async function quickSort(low, high, stats) { // MODIFIED
             if (low < high) {
-                let pi = await partition(low, high);
+                stats.passes++; // NEW: Counting partition calls
+                let pi = await partition(low, high, stats); // MODIFIED
                 
                 // Recursively sort elements before and after partition
-                await quickSort(low, pi - 1);
-                await quickSort(pi + 1, high);
+                await quickSort(low, pi - 1, stats); // MODIFIED
+                await quickSort(pi + 1, high, stats); // MODIFIED
             }
             // Mark as sorted when a subarray is done (low >= high)
             if (low >= 0 && low < array.length) array[low].color = COLOR_SORTED;
             if (high >= 0 && high < array.length) array[high].color = COLOR_SORTED;
-            // No drawArray/sleep here, let partition handle it
+            // No draw/sleep here, let partition handle it
         }
 
-        async function partition(low, high) {
+        async function partition(low, high, stats) { // MODIFIED
             let pivot = array[high].value;
             array[high].color = COLOR_PIVOT; // Mark pivot
             let i = (low - 1); // Index of smaller element
@@ -583,6 +632,7 @@
                         await checkStop();
 
                         swap(i, j);
+                        stats.swaps++; // NEW
                     }
                 }
                 
@@ -597,7 +647,10 @@
             drawArray();
             await checkStop();
             
-            swap(i + 1, high);
+            if (i + 1 !== high) { // NEW: Only count if it's a real swap
+                swap(i + 1, high);
+                stats.swaps++; // NEW
+            }
             
             // Reset colors
             if(i + 1 < array.length) array[i + 1].color = COLOR_SORTED; // Pivot is sorted
@@ -611,21 +664,24 @@
         // --- 5. Merge Sort ---
         async function mergeSortWrapper() {
             // Create a copy of the array values for merging
+            let stats = { swaps: 0, passes: 0 }; // NEW
             let values = array.map(item => item.value);
-            await mergeSort(values, 0, array.length - 1);
+            await mergeSort(values, 0, array.length - 1, stats); // MODIFIED
+            return stats; // NEW
         }
         
-        async function mergeSort(values, l, r) {
+        async function mergeSort(values, l, r, stats) { // MODIFIED
             if (l >= r) {
                 return;
             }
             let m = l + Math.floor((r - l) / 2);
-            await mergeSort(values, l, m);
-            await mergeSort(values, m + 1, r);
-            await merge(values, l, m, r);
+            await mergeSort(values, l, m, stats); // MODIFIED
+            await mergeSort(values, m + 1, r, stats); // MODIFIED
+            await merge(values, l, m, r, stats); // MODIFIED
         }
 
-        async function merge(values, l, m, r) {
+        async function merge(values, l, m, r, stats) { // MODIFIED
+            stats.passes++; // NEW: Counting merge calls
             let n1 = m - l + 1;
             let n2 = r - m;
 
@@ -658,12 +714,14 @@
                     // Update main array for visualization
                     array[k].value = L[i];
                     array[k].color = COLOR_SWAP; // Show it being "placed"
+                    stats.swaps++; // NEW: Count writes
                     i++;
                 } else {
                     values[k] = R[j];
                     // Update main array for visualization
                     array[k].value = R[j];
                     array[k].color = COLOR_SWAP; // Show it being "placed"
+                    stats.swaps++; // NEW: Count writes
                     j++;
                 }
                 drawArray();
@@ -677,6 +735,7 @@
                 values[k] = L[i];
                 array[k].value = L[i];
                 array[k].color = COLOR_SWAP;
+                stats.swaps++; // NEW
                 drawArray();
                 await checkStop();
                 array[k].color = COLOR_PRIMARY;
@@ -689,6 +748,7 @@
                 values[k] = R[j];
                 array[k].value = R[j];
                 array[k].color = COLOR_SWAP;
+                stats.swaps++; // NEW
                 drawArray();
                 await checkStop();
                 array[k].color = COLOR_PRIMARY;
