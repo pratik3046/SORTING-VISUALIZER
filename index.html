@@ -66,26 +66,36 @@
         
         <!-- Top Row: Array Generation & Slider -->
         <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
-            <!-- Left Side: Generation -->
-            <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+            <!-- NEW Left Side: Generation, Size, & Speed -->
+            <div class="flex flex-col sm:flex-row gap-4 items-center w-full md:w-auto">
                 <button id="generate-btn" class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition duration-200 w-full sm:w-auto">
                     Generate New Array
                 </button>
-                <div id="custom-input-container" class="flex items-center gap-2 w-full sm:w-auto">
-                    <input id="custom-array-input" type="text" placeholder="e.g., 5,3,8,1" class="bg-gray-700 text-white p-2 rounded-lg flex-1 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    <button id="plot-btn" class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-3 rounded-lg shadow transition duration-200">
-                        Plot
-                    </button>
+                
+                <div class="flex flex-col items-center w-full sm:w-auto md:min-w-[150px]">
+                    <label for="size-slider" class="block text-sm font-medium text-gray-300 mb-1">
+                        Size
+                    </label>
+                    <input id="size-slider" type="range" min="2" max="200" value="50" class="w-full">
+                    <span id="size-label" class="text-xs text-gray-400 mt-1">Size: 50</span>
+                </div>
+
+                <!-- NEW: Speed Slider -->
+                <div class="flex flex-col items-center w-full sm:w-auto md:min-w-[150px]">
+                    <label for="speed-slider" class="block text-sm font-medium text-gray-300 mb-1">
+                        Speed
+                    </label>
+                    <input id="speed-slider" type="range" min="1" max="200" value="100" class="w-full">
+                    <span id="speed-label" class="text-xs text-gray-400 mt-1">Speed: 100</span>
                 </div>
             </div>
 
-            <!-- Right Side: Slider -->
-            <div class="flex flex-col items-center w-full md:w-auto md:min-w-[250px]">
-                <label for="size-slider" class="block text-sm font-medium text-gray-300 mb-1">
-                    Size & Speed
-                </label>
-                <input id="size-slider" type="range" min="2" max="200" value="50" class="w-full">
-                <span id="size-label" class="text-xs text-gray-400 mt-1">Size: 50</span>
+            <!-- NEW Right Side: Custom Plot -->
+            <div id="custom-input-container" class="flex items-center gap-2 w-full md:w-auto">
+                <input id="custom-array-input" type="text" placeholder="e.g., 5,3,8,1" class="bg-gray-700 text-white p-2 rounded-lg flex-1 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <button id="plot-btn" class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-3 rounded-lg shadow transition duration-200">
+                    Plot
+                </button>
             </div>
         </div>
 
@@ -159,6 +169,8 @@
         const stopBtn = document.getElementById('stop-btn');
         const sizeSlider = document.getElementById('size-slider');
         const sizeLabel = document.getElementById('size-label');
+        const speedSlider = document.getElementById('speed-slider'); // NEW
+        const speedLabel = document.getElementById('speed-label'); // NEW
         const sortBtns = document.querySelectorAll('.sort-btn');
         const controlsContainer = document.getElementById('controls-container');
         const customInputContainer = document.getElementById('custom-input-container');
@@ -210,6 +222,10 @@
                 if (isSorting) return;
                 handleSliderChange();
             });
+            speedSlider.addEventListener('input', () => { // NEW
+                if (isSorting) return;
+                handleSpeedSliderChange();
+            });
             plotBtn.addEventListener('click', handlePlot);
             stopBtn.addEventListener('click', () => {
                 isStopping = true;
@@ -229,7 +245,8 @@
             });
 
             // Initial array generation
-            handleSliderChange(); // To set initial size and delay
+            handleSliderChange(); // To set initial size
+            handleSpeedSliderChange(); // NEW: To set initial delay
             generateNewArray();
         });
 
@@ -242,13 +259,17 @@
 
         function handleSliderChange() {
             arraySize = parseInt(sizeSlider.value);
-            // Invert the slider value for delay
-            let maxDelay = 200;
-            let minDelay = 1;
-            let speed = (sizeSlider.max - arraySize) / (sizeSlider.max - sizeSlider.min);
-            delay = minDelay + (maxDelay - minDelay) * speed;
-            
+            // REMOVED delay calculation from here
             sizeLabel.textContent = `Size: ${arraySize}`;
+        }
+
+        // NEW: Function to handle the speed slider
+        function handleSpeedSliderChange() {
+            let speedValue = parseInt(speedSlider.value);
+            let maxDelay = 201; // 201 to make the math clean (201 - 200 = 1ms)
+            // Invert the value: High speed slider = low delay
+            delay = maxDelay - speedValue;
+            speedLabel.textContent = `Speed: ${speedValue}`;
         }
 
         // *** MODIFIED FUNCTION ***
@@ -284,7 +305,8 @@
             const barSpacing = barWidth > 3 ? 1 : 0; // Add spacing if bars are wide
             
             // NEW: Font settings
-            const fontSize = Math.min(16, Math.max(8, barWidth / 2.5)); // Dynamic font size
+            // MODIFIED: Allow font to be much smaller to show on all 200 bars
+            const fontSize = Math.min(16, Math.max(5, barWidth * 0.9)); 
             ctx.font = `${fontSize}px Inter`;
             ctx.textAlign = 'center';
 
@@ -300,18 +322,16 @@
                     bar.height                      // height (use .height)
                 );
 
-                // NEW: Draw the text, if bars are wide enough
-                if (barWidth > 20) { // Only draw if bars are wider than 20px
-                    // Use black text for bright colors, white text for dark
-                    // ctx.fillStyle = (bar.color === COLOR_PRIMARY || bar.color === COLOR_SWAP || bar.color === COLOR_PIVOT) ? '#111827' : '#f8fafc';
-                    ctx.fillStyle = COLOR_SWAP; // Set text color to Emerald as requested
-                    
-                    ctx.fillText(
+                // MODIFIED: Removed the "if (barWidth > 10)" condition
+                // Now text will be drawn for all array sizes.
+                // Note: This will become unreadable with very large arrays.
+                ctx.fillStyle = COLOR_SWAP; // Set text color to Emerald as requested
+                
+                ctx.fillText(
                         Math.round(bar.value),          // The text to draw (use .value)
                         i * barWidth + (barWidth / 2),  // x (center of the bar)
                         canvas.height - bar.height - 5  // y (5px above the bar)
-                    );
-                }
+                );
             }
         }
 
@@ -337,7 +357,7 @@
             array = newValues.map(num => ({
                 value: num, // The user's number
                 height: (num / maxVal) * canvasHeight + 10, // Scale to fit canvas
-                color: COLOR_PRIMARY
+                color: COLOR_BARNO // MODIFIED: Use COLOR_BARNO for consistency
             }));
 
             arraySize = array.length;
@@ -345,13 +365,7 @@
             // Manually update slider and related values
             let maxDelay = 200;
             let minDelay = 1;
-            let sliderMax = 200; // Use a virtual max for calculation
-            let sliderMin = 2;
-            let speed = (sliderMax - arraySize) / (sliderMax - sliderMin);
-            delay = minDelay + (maxDelay - minDelay) * speed;
-            
-            if (arraySize > 200) delay = 1; // Cap delay
-            if (arraySize < 10) delay = 200;
+            // REMOVED all delay calculations from this function
             
             sizeLabel.textContent = `Size: ${arraySize} (Custom)`; // <-- UPDATED LABEL
             
@@ -406,6 +420,7 @@
         function toggleControls(enabled) {
             generateBtn.disabled = !enabled;
             sizeSlider.disabled = !enabled;
+            speedSlider.disabled = !enabled; // NEW
             plotBtn.disabled = !enabled;
             customArrayInput.disabled = !enabled;
 
@@ -441,11 +456,11 @@
                    drawArray();
                 }
             }
-            drawArray();
-            await new Promise(r => setTimeout(r, 500));
+            await new Promise(r => setTimeout(r, 500)); // Wait half a second
 
+            // Reset colors
             for (let i = 0; i < array.length; i++) {
-                array[i].color = COLOR_PRIMARY;
+                array[i].color = COLOR_BARNO; // MODIFIED: Reset to BARNO
             }
             drawArray();
         }
@@ -482,8 +497,8 @@
                         await checkStop();
                     }
 
-                    array[i].color = COLOR_PRIMARY;
-                    array[i + 1].color = COLOR_PRIMARY;
+                    array[i].color = COLOR_BARNO; // MODIFIED: Reset to BARNO
+                    array[i + 1].color = COLOR_BARNO; // MODIFIED: Reset to BARNO
                 }
                 array[n - 1].color = COLOR_SORTED;
                 n--;
@@ -514,12 +529,12 @@
                     await checkStop();
 
                     if (array[j].height < array[min_idx].height) { // MODIFIED
-                        array[min_idx].color = COLOR_PRIMARY;
+                        array[min_idx].color = COLOR_BARNO; // MODIFIED: Reset to BARNO
                         min_idx = j;
                         array[min_idx].color = COLOR_PIVOT;
                     }
                     drawArray();
-                    if(j !== min_idx) array[j].color = COLOR_PRIMARY;
+                    if(j !== min_idx) array[j].color = COLOR_BARNO; // MODIFIED: Reset to BARNO
                 }
 
                 array[i].color = COLOR_SWAP;
@@ -532,7 +547,7 @@
                     stats.swaps++;
                 }
 
-                array[min_idx].color = COLOR_PRIMARY;
+                array[min_idx].color = COLOR_BARNO; // MODIFIED: Reset to BARNO
                 array[i].color = COLOR_SORTED;
                 drawArray();
                 await checkStop();
@@ -573,7 +588,7 @@
                     drawArray();
                     await checkStop();
                     
-                    array[j + 1].color = COLOR_SORTED;
+                    array[j + 1].color = COLOR_SORTED; // Reset shifted element
                     j = j - 1;
                 }
                 array[j + 1] = keyObj;
@@ -633,8 +648,8 @@
                     }
                 }
                 
-                if (i >= low) array[i].color = COLOR_PRIMARY;
-                array[j].color = COLOR_PRIMARY;
+                if (i >= low) array[i].color = COLOR_BARNO; // MODIFIED: Reset to BARNO
+                array[j].color = COLOR_BARNO; // MODIFIED: Reset to BARNO
             }
 
             array[high].color = COLOR_SWAP;
@@ -647,8 +662,8 @@
                 stats.swaps++;
             }
             
-            if(i + 1 < array.length) array[i + 1].color = COLOR_SORTED;
-            array[high].color = COLOR_PRIMARY;
+            if(i + 1 < array.length) array[i + 1].color = COLOR_SORTED; // Pivot is sorted
+            array[high].color = COLOR_BARNO; // MODIFIED: Reset to BARNO
             drawArray();
             await checkStop();
 
@@ -703,23 +718,25 @@
                 drawArray();
                 await checkStop();
 
-                // Compare .height of objects
+                // *** FIXED: Added the missing comparison logic ***
                 if (L[i].height <= R[j].height) { 
                     values[k] = L[i];
-                    array[k] = L[i]; // Copy object back to main array
+                    array[k] = L[i]; // Copy object
                     array[k].color = COLOR_SWAP;
                     stats.swaps++;
                     i++;
                 } else {
                     values[k] = R[j];
-                    array[k] = R[j]; // Copy object back to main array
-                    array[k].color = COLOR_SWAP;
+                    array[k] = R[j]; // Copy object
+                    array[k].color = COLOR_SWAP; 
                     stats.swaps++;
                     j++;
                 }
-                drawArray();
+                // ************************************************
+
+                drawArray(); // Draw the swap
                 await checkStop();
-                array[k].color = COLOR_PRIMARY;
+                array[k].color = COLOR_BARNO; // MODIFIED: Reset to BARNO
                 k++;
             }
 
@@ -731,7 +748,7 @@
                 stats.swaps++;
                 drawArray();
                 await checkStop();
-                array[k].color = COLOR_PRIMARY;
+                array[k].color = COLOR_BARNO; // MODIFIED: Reset to BARNO
                 i++;
                 k++;
             }
@@ -744,7 +761,7 @@
                 stats.swaps++;
                 drawArray();
                 await checkStop();
-                array[k].color = COLOR_PRIMARY;
+                array[k].color = COLOR_BARNO; // MODIFIED: Reset to BARNO
                 j++;
                 k++;
             }
