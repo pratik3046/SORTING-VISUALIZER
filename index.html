@@ -11,16 +11,16 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* 3. Set Inter as the default font */
+        
         body {
             font-family: 'Inter', sans-serif;
         }
-        /* 4. Style for buttons when disabled */
+        
         button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
-        /* 5. Custom styles for the range slider */
+        
         input[type=range] {
             -webkit-appearance: none;
             appearance: none;
@@ -99,7 +99,7 @@
             </div>
         </div>
 
-        <!-- Divider -->
+        <!-- Divider --> 
         <hr class="border-gray-700">
 
         <!-- Bottom Row: Sort Buttons -->
@@ -169,8 +169,8 @@
         const stopBtn = document.getElementById('stop-btn');
         const sizeSlider = document.getElementById('size-slider');
         const sizeLabel = document.getElementById('size-label');
-        const speedSlider = document.getElementById('speed-slider'); // NEW
-        const speedLabel = document.getElementById('speed-label'); // NEW
+        const speedSlider = document.getElementById('speed-slider');  
+        const speedLabel = document.getElementById('speed-label');
         const sortBtns = document.querySelectorAll('.sort-btn');
         const controlsContainer = document.getElementById('controls-container');
         const customInputContainer = document.getElementById('custom-input-container');
@@ -305,7 +305,7 @@
             const barSpacing = barWidth > 3 ? 1 : 0; // Add spacing if bars are wide
             
             // NEW: Font settings
-            // MODIFIED: Allow font to be much smaller to show on all 200 bars
+           
             const fontSize = Math.min(16, Math.max(5, barWidth * 0.9)); 
             ctx.font = `${fontSize}px Inter`;
             ctx.textAlign = 'center';
@@ -322,9 +322,9 @@
                     bar.height                      // height (use .height)
                 );
 
-                // MODIFIED: Removed the "if (barWidth > 10)" condition
+                // Removed the "if (barWidth > 10)" condition
                 // Now text will be drawn for all array sizes.
-                // Note: This will become unreadable with very large arrays.
+                
                 ctx.fillStyle = COLOR_SWAP; // Set text color to Emerald as requested
                 
                 ctx.fillText(
@@ -357,17 +357,17 @@
             array = newValues.map(num => ({
                 value: num, // The user's number
                 height: (num / maxVal) * canvasHeight + 10, // Scale to fit canvas
-                color: COLOR_BARNO // MODIFIED: Use COLOR_BARNO for consistency
+                color: COLOR_BARNO 
             }));
 
             arraySize = array.length;
             
             // Manually update slider and related values
-            let maxDelay = 200;
+            let maxDelay = 400;
             let minDelay = 1;
             // REMOVED all delay calculations from this function
             
-            sizeLabel.textContent = `Size: ${arraySize} (Custom)`; // <-- UPDATED LABEL
+            sizeLabel.textContent = `Size: ${arraySize} (Custom)`; 
             
             drawArray();
         }
@@ -420,7 +420,7 @@
         function toggleControls(enabled) {
             generateBtn.disabled = !enabled;
             sizeSlider.disabled = !enabled;
-            speedSlider.disabled = !enabled; // NEW
+            speedSlider.disabled = !enabled; 
             plotBtn.disabled = !enabled;
             customArrayInput.disabled = !enabled;
 
@@ -460,7 +460,7 @@
 
             // Reset colors
             for (let i = 0; i < array.length; i++) {
-                array[i].color = COLOR_BARNO; // MODIFIED: Reset to BARNO
+                array[i].color = COLOR_BARNO; 
             }
             drawArray();
         }
@@ -468,7 +468,7 @@
         // === Sorting Algorithms ===
 
         // --- 1. Bubble Sort ---
-        // *** MODIFIED: Compares .height ***
+        
         async function bubbleSort() {
             let stats = { swaps: 0, passes: 0 };
             let n = array.length;
@@ -483,7 +483,7 @@
                     drawArray();
                     await checkStop();
 
-                    if (array[i].height > array[i + 1].height) { // MODIFIED
+                    if (array[i].height > array[i + 1].height) { 
                         array[i].color = COLOR_SWAP;
                         array[i + 1].color = COLOR_SWAP;
                         drawArray();
@@ -497,8 +497,8 @@
                         await checkStop();
                     }
 
-                    array[i].color = COLOR_BARNO; // MODIFIED: Reset to BARNO
-                    array[i + 1].color = COLOR_BARNO; // MODIFIED: Reset to BARNO
+                    array[i].color = COLOR_BARNO; 
+                    array[i + 1].color = COLOR_BARNO; 
                 }
                 array[n - 1].color = COLOR_SORTED;
                 n--;
@@ -512,7 +512,7 @@
         }
 
         // --- 2. Selection Sort ---
-        // *** MODIFIED: Compares .height ***
+        
         async function selectionSort() {
             let stats = { swaps: 0, passes: 0 };
             let n = array.length;
@@ -528,13 +528,13 @@
                     drawArray();
                     await checkStop();
 
-                    if (array[j].height < array[min_idx].height) { // MODIFIED
-                        array[min_idx].color = COLOR_BARNO; // MODIFIED: Reset to BARNO
+                    if (array[j].height < array[min_idx].height) { 
+                        array[min_idx].color = COLOR_BARNO; 
                         min_idx = j;
                         array[min_idx].color = COLOR_PIVOT;
                     }
                     drawArray();
-                    if(j !== min_idx) array[j].color = COLOR_BARNO; // MODIFIED: Reset to BARNO
+                    if(j !== min_idx) array[j].color = COLOR_BARNO; 
                 }
 
                 array[i].color = COLOR_SWAP;
@@ -547,7 +547,7 @@
                     stats.swaps++;
                 }
 
-                array[min_idx].color = COLOR_BARNO; // MODIFIED: Reset to BARNO
+                array[min_idx].color = COLOR_BARNO; 
                 array[i].color = COLOR_SORTED;
                 drawArray();
                 await checkStop();
@@ -558,7 +558,7 @@
         }
 
         // --- 3. Insertion Sort ---
-        // *** MODIFIED: Compares .height ***
+        
         async function insertionSort() {
             let stats = { swaps: 0, passes: 0 };
             let n = array.length;
@@ -566,7 +566,7 @@
 
             for (let i = 1; i < n; i++) {
                 stats.passes++;
-                let key = array[i].height; // MODIFIED
+                let key = array[i].height; 
                 let keyObj = array[i];
                 let j = i - 1;
 
@@ -574,7 +574,7 @@
                 drawArray();
                 await checkStop();
 
-                while (j >= 0 && array[j].height > key) { // MODIFIED
+                while (j >= 0 && array[j].height > key) { 
                     array[j].color = COLOR_COMPARE;
                     drawArray();
                     await checkStop();
@@ -588,7 +588,7 @@
                     drawArray();
                     await checkStop();
                     
-                    array[j + 1].color = COLOR_SORTED; // Reset shifted element
+                    array[j + 1].color = COLOR_SORTED; 
                     j = j - 1;
                 }
                 array[j + 1] = keyObj;
@@ -624,7 +624,7 @@
 
         // *** MODIFIED: Compares .height ***
         async function partition(low, high, stats) {
-            let pivot = array[high].height; // MODIFIED
+            let pivot = array[high].height; 
             array[high].color = COLOR_PIVOT;
             let i = (low - 1);
 
@@ -634,7 +634,7 @@
                 drawArray();
                 await checkStop();
 
-                if (array[j].height < pivot) { // MODIFIED
+                if (array[j].height < pivot) { 
                     i++;
                     
                     if (i !== j) {
@@ -648,8 +648,8 @@
                     }
                 }
                 
-                if (i >= low) array[i].color = COLOR_BARNO; // MODIFIED: Reset to BARNO
-                array[j].color = COLOR_BARNO; // MODIFIED: Reset to BARNO
+                if (i >= low) array[i].color = COLOR_BARNO; 
+                array[j].color = COLOR_BARNO; 
             }
 
             array[high].color = COLOR_SWAP;
@@ -663,7 +663,7 @@
             }
             
             if(i + 1 < array.length) array[i + 1].color = COLOR_SORTED; // Pivot is sorted
-            array[high].color = COLOR_BARNO; // MODIFIED: Reset to BARNO
+            array[high].color = COLOR_BARNO; 
             drawArray();
             await checkStop();
 
@@ -671,7 +671,7 @@
         }
 
         // --- 5. Merge Sort ---
-        // *** MODIFIED: Uses array of objects ***
+       
         async function mergeSortWrapper() {
             let stats = { swaps: 0, passes: 0 };
             // Create a copy of the array *of objects*
@@ -690,7 +690,7 @@
             await merge(values, l, m, r, stats);
         }
 
-        // *** MODIFIED: Merges objects based on .height ***
+        
         async function merge(values, l, m, r, stats) {
             stats.passes++;
             let n1 = m - l + 1;
@@ -700,7 +700,7 @@
             let L = new Array(n1);
             let R = new Array(n2);
 
-            // Copy *objects* to temp arrays
+            
             for (let i = 0; i < n1; i++) {
                 L[i] = values[l + i];
             }
@@ -718,7 +718,7 @@
                 drawArray();
                 await checkStop();
 
-                // *** FIXED: Added the missing comparison logic ***
+                
                 if (L[i].height <= R[j].height) { 
                     values[k] = L[i];
                     array[k] = L[i]; // Copy object
@@ -732,23 +732,23 @@
                     stats.swaps++;
                     j++;
                 }
-                // ************************************************
+                
 
                 drawArray(); // Draw the swap
                 await checkStop();
-                array[k].color = COLOR_BARNO; // MODIFIED: Reset to BARNO
+                array[k].color = COLOR_BARNO; 
                 k++;
             }
 
             // Copy remaining *objects* of L[]
             while (i < n1) {
                 values[k] = L[i];
-                array[k] = L[i]; // Copy object
+                array[k] = L[i]; 
                 array[k].color = COLOR_SWAP;
                 stats.swaps++;
                 drawArray();
                 await checkStop();
-                array[k].color = COLOR_BARNO; // MODIFIED: Reset to BARNO
+                array[k].color = COLOR_BARNO; 
                 i++;
                 k++;
             }
@@ -761,7 +761,7 @@
                 stats.swaps++;
                 drawArray();
                 await checkStop();
-                array[k].color = COLOR_BARNO; // MODIFIED: Reset to BARNO
+                array[k].color = COLOR_BARNO;
                 j++;
                 k++;
             }
